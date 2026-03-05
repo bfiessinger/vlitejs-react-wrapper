@@ -1,6 +1,6 @@
 {
   "name": "@bfiessinger/vlitejs-react-wrapper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A React wrapper component for the vlitejs video/audio player",
   "main": "dist/vlitejs-react-wrapper.cjs",
   "module": "dist/vlitejs-react-wrapper.mjs",
