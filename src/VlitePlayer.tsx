@@ -99,17 +99,41 @@ const VlitePlayer = forwardRef<VliteInstance, VlitePlayerProps>(
       };
     });
 
-    // Memoize the serialized plugin list so the effect only re-runs when
+    // Resolve the provider ID string from either a plain string or a
+    // VliteProviderRegistration object. `provider` always has a value here
+    // because the prop defaults to 'html5' in the destructuring above.
+    const providerId = typeof provider === 'string' ? provider : provider.id;
+
+    // Memoize the serialized plugin ID list so the effect only re-runs when
     // the plugin IDs actually change, not just when the array reference changes.
-    const pluginsKey = useMemo(() => (plugins ?? []).join(','), [plugins]);
+    const pluginsKey = useMemo(
+      () => (plugins ?? []).map((p) => (typeof p === 'string' ? p : p.id)).join(','),
+      [plugins],
+    );
 
     useEffect(() => {
       if (!mediaRef.current) return;
 
+      // Register the provider inline if an entry was supplied.
+      // This only runs when `providerId` changes (see deps array below), so
+      // re-registration is bounded to actual provider switches.
+      if (typeof provider !== 'string') {
+        Vlitejs.registerProvider(provider.id, provider.entry, provider.options);
+      }
+
+      // Register any plugins that were supplied as objects, and collect the
+      // resolved string IDs to pass to vlitejs.
+      // Like the provider above, this only runs when plugin IDs change.
+      const resolvedPlugins = (plugins ?? []).map((plugin) => {
+        if (typeof plugin === 'string') return plugin;
+        Vlitejs.registerPlugin(plugin.id, plugin.entry, plugin.options);
+        return plugin.id;
+      });
+
       const vlite = new Vlitejs(mediaRef.current, {
         options: options as Record<string, unknown> | undefined,
-        provider,
-        plugins: plugins ?? [],
+        provider: providerId,
+        plugins: resolvedPlugins,
         onReady: (player) => {
           handlersRef.current.onReady?.(player);
         },
@@ -148,15 +172,15 @@ const VlitePlayer = forwardRef<VliteInstance, VlitePlayerProps>(
           ref.current = null;
         }
       };
-    // Re-initialise only when the provider or serialized plugin list changes.
+    // Re-initialise only when the provider ID or serialized plugin list changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [provider, pluginsKey]);
+    }, [providerId, pluginsKey]);
 
     // Determine the element type based on provider / media type
-    const isExternalProvider = provider !== 'html5';
+    const isExternalProvider = providerId !== 'html5';
 
     if (isExternalProvider) {
-      const dataAttr = `data-${provider}-id`;
+      const dataAttr = `data-${providerId}-id`;
       return (
         <div
           ref={mediaRef as React.RefObject<HTMLDivElement>}

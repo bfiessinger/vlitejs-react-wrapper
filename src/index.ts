@@ -7,4 +7,6 @@ export type {
   VlitePlayerType,
   VliteInstance,
   VlitePlugin,
+  VlitePluginRegistration,
+  VliteProviderRegistration,
 } from './types';

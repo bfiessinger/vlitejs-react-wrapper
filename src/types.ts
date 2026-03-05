@@ -5,6 +5,36 @@ export type VlitePlayerType = VlitePlayerInstance;
 export type VliteInstance = InstanceType<typeof Vlitejs>;
 
 /**
+ * An inline provider registration object.
+ * Pass this as the `provider` prop to automatically register the provider
+ * via `Vlitejs.registerProvider` before the player is initialised.
+ */
+export interface VliteProviderRegistration {
+  /** The provider identifier (e.g. `'youtube'`, `'vimeo'`, `'dailymotion'`). */
+  id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** The provider factory function (see vlitejs provider API). */
+  entry: any;
+  /** Optional provider-level options forwarded to `Vlitejs.registerProvider`. */
+  options?: unknown;
+}
+
+/**
+ * An inline plugin registration object.
+ * Pass this inside the `plugins` array to automatically register the plugin
+ * via `Vlitejs.registerPlugin` before the player is initialised.
+ */
+export interface VlitePluginRegistration {
+  /** The plugin identifier (e.g. `'hotkeys'`, `'subtitle'`, `'pip'`). */
+  id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** The plugin class (see vlitejs plugin API). */
+  entry: any;
+  /** Optional plugin-level options forwarded to `Vlitejs.registerPlugin`. */
+  options?: unknown;
+}
+
+/**
  * vlitejs player options.
  * Controls which elements appear on the control bar and other player behaviors.
  */
@@ -43,8 +73,12 @@ export interface VliteOptions {
 
 /**
  * vlitejs plugin registration.
+ * - Pass a `string` ID when the plugin has already been registered globally
+ *   with `Vlitejs.registerPlugin`.
+ * - Pass a {@link VlitePluginRegistration} object to register the plugin
+ *   inline; the wrapper will call `Vlitejs.registerPlugin` automatically.
  */
-export type VlitePlugin = string;
+export type VlitePlugin = string | VlitePluginRegistration;
 
 /**
  * Event handler types emitted by the vlitejs player.
@@ -84,15 +118,29 @@ export interface VlitePlayerProps extends VliteEventHandlers {
    * Sets the corresponding `data-{provider}-id` attribute on the element.
    */
   videoId?: string;
-  /** The vlitejs provider to use. Default: 'html5' */
-  provider?: string;
+  /**
+   * The vlitejs provider to use.
+   *
+   * - Pass a `string` (e.g. `'html5'`, `'youtube'`) when the provider has
+   *   already been registered globally with `Vlitejs.registerProvider`.
+   * - Pass a {@link VliteProviderRegistration} object to register the provider
+   *   inline; the wrapper will call `Vlitejs.registerProvider` automatically.
+   *
+   * Default: `'html5'`
+   */
+  provider?: string | VliteProviderRegistration;
   /** The media type: 'video' or 'audio'. Default: 'video' */
   type?: 'video' | 'audio';
   /** vlitejs player options */
   options?: VliteOptions;
   /**
-   * List of plugin IDs to activate.
-   * Plugins must be registered with `Vlitejs.registerPlugin` before use.
+   * Plugins to activate on the player.
+   *
+   * Each entry can be:
+   * - A `string` ID for a plugin that has already been registered globally
+   *   with `Vlitejs.registerPlugin`.
+   * - A {@link VlitePluginRegistration} object to register the plugin inline;
+   *   the wrapper will call `Vlitejs.registerPlugin` automatically.
    */
   plugins?: VlitePlugin[];
   /**

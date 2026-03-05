@@ -21,12 +21,21 @@ function defaultMockImpl(
 
 vi.mock('vlitejs', () => {
   // vi.fn() wrapping a regular function supports `new` and mockImplementationOnce
-  const MockVlitejs = vi.fn(defaultMockImpl);
+  const MockVlitejs = vi.fn(defaultMockImpl) as ReturnType<typeof vi.fn> & {
+    registerProvider: ReturnType<typeof vi.fn>;
+    registerPlugin: ReturnType<typeof vi.fn>;
+  };
+  MockVlitejs.registerProvider = vi.fn();
+  MockVlitejs.registerPlugin = vi.fn();
   return { default: MockVlitejs };
 });
 
 import Vlitejs from 'vlitejs';
-const MockVlitejs = Vlitejs as unknown as MockInstance;
+type MockVlitejsType = MockInstance & {
+  registerProvider: ReturnType<typeof vi.fn>;
+  registerPlugin: ReturnType<typeof vi.fn>;
+};
+const MockVlitejs = Vlitejs as unknown as MockVlitejsType;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -105,6 +114,83 @@ describe('VlitePlayer', () => {
       render(<VlitePlayer src="/video.mp4" />);
       const [, config] = MockVlitejs.mock.calls[0] as [HTMLElement, { plugins: string[] }];
       expect(config.plugins).toEqual([]);
+    });
+  });
+
+  describe('inline provider registration', () => {
+    it('calls Vlitejs.registerProvider when provider is an object', () => {
+      const fakeEntry = vi.fn();
+      render(<VlitePlayer videoId="abc" provider={{ id: 'youtube', entry: fakeEntry }} />);
+      expect(MockVlitejs.registerProvider).toHaveBeenCalledWith('youtube', fakeEntry, undefined);
+    });
+
+    it('passes provider id to Vlitejs when provider is an object', () => {
+      const fakeEntry = vi.fn();
+      render(<VlitePlayer videoId="abc" provider={{ id: 'youtube', entry: fakeEntry }} />);
+      const [, config] = MockVlitejs.mock.calls[0] as [HTMLElement, { provider: string }];
+      expect(config.provider).toBe('youtube');
+    });
+
+    it('renders the correct data attribute when provider is an object', () => {
+      const fakeEntry = vi.fn();
+      const { container } = render(
+        <VlitePlayer videoId="abc123" provider={{ id: 'youtube', entry: fakeEntry }} />,
+      );
+      const div = container.querySelector('div');
+      expect(div?.getAttribute('data-youtube-id')).toBe('abc123');
+    });
+
+    it('forwards provider options to Vlitejs.registerProvider', () => {
+      const fakeEntry = vi.fn();
+      const opts = { foo: 'bar' };
+      render(<VlitePlayer videoId="abc" provider={{ id: 'youtube', entry: fakeEntry, options: opts }} />);
+      expect(MockVlitejs.registerProvider).toHaveBeenCalledWith('youtube', fakeEntry, opts);
+    });
+
+    it('does not call Vlitejs.registerProvider when provider is a string', () => {
+      render(<VlitePlayer src="/video.mp4" provider="html5" />);
+      expect(MockVlitejs.registerProvider).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('inline plugin registration', () => {
+    it('calls Vlitejs.registerPlugin when a plugin is an object', () => {
+      const fakePlugin = vi.fn();
+      render(<VlitePlayer src="/video.mp4" plugins={[{ id: 'hotkeys', entry: fakePlugin }]} />);
+      expect(MockVlitejs.registerPlugin).toHaveBeenCalledWith('hotkeys', fakePlugin, undefined);
+    });
+
+    it('passes resolved plugin id to Vlitejs when plugin is an object', () => {
+      const fakePlugin = vi.fn();
+      render(<VlitePlayer src="/video.mp4" plugins={[{ id: 'hotkeys', entry: fakePlugin }]} />);
+      const [, config] = MockVlitejs.mock.calls[0] as [HTMLElement, { plugins: string[] }];
+      expect(config.plugins).toEqual(['hotkeys']);
+    });
+
+    it('forwards plugin options to Vlitejs.registerPlugin', () => {
+      const fakePlugin = vi.fn();
+      const opts = { speed: 2 };
+      render(<VlitePlayer src="/video.mp4" plugins={[{ id: 'hotkeys', entry: fakePlugin, options: opts }]} />);
+      expect(MockVlitejs.registerPlugin).toHaveBeenCalledWith('hotkeys', fakePlugin, opts);
+    });
+
+    it('handles a mixed array of string and object plugins', () => {
+      const fakePlugin = vi.fn();
+      render(
+        <VlitePlayer
+          src="/video.mp4"
+          plugins={['subtitle', { id: 'hotkeys', entry: fakePlugin }]}
+        />,
+      );
+      const [, config] = MockVlitejs.mock.calls[0] as [HTMLElement, { plugins: string[] }];
+      expect(config.plugins).toEqual(['subtitle', 'hotkeys']);
+      expect(MockVlitejs.registerPlugin).toHaveBeenCalledTimes(1);
+      expect(MockVlitejs.registerPlugin).toHaveBeenCalledWith('hotkeys', fakePlugin, undefined);
+    });
+
+    it('does not call Vlitejs.registerPlugin for string-only plugins', () => {
+      render(<VlitePlayer src="/video.mp4" plugins={['subtitle']} />);
+      expect(MockVlitejs.registerPlugin).not.toHaveBeenCalled();
     });
   });
 
