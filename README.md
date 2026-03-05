@@ -52,8 +52,25 @@ function App() {
 import VlitePlayer from 'vlitejs-react-wrapper';
 import 'vlitejs/vlite.css';
 import YoutubeProvider from 'vlitejs/providers/youtube';
-import Vlitejs from 'vlitejs';
 
+function App() {
+  return (
+    <VlitePlayer
+      provider={{ id: 'youtube', entry: YoutubeProvider }}
+      videoId="dQw4w9WgXcQ"
+      options={{ controls: true }}
+    />
+  );
+}
+```
+
+Alternatively, if you prefer to register the provider globally yourself (e.g. once at application start), you can still pass the provider name as a plain string:
+
+```tsx
+import Vlitejs from 'vlitejs';
+import YoutubeProvider from 'vlitejs/providers/youtube';
+
+// Register once at app startup
 Vlitejs.registerProvider('youtube', YoutubeProvider);
 
 function App() {
@@ -104,12 +121,35 @@ function App() {
 
 ### Using plugins
 
-Plugins must be registered globally with `Vlitejs.registerPlugin` before use.
+Pass a `VlitePluginRegistration` object in the `plugins` array to register the plugin inline — no need to call `Vlitejs.registerPlugin` yourself:
+
+```tsx
+import VlitePlayer from 'vlitejs-react-wrapper';
+import HotkeysPlugin from 'vlitejs/plugins/hotkeys';
+
+function App() {
+  return (
+    <VlitePlayer
+      src="/video.mp4"
+      plugins={[{ id: 'hotkeys', entry: HotkeysPlugin }]}
+    />
+  );
+}
+```
+
+You can also mix pre-registered (string) IDs with inline registration objects in the same array:
+
+```tsx
+plugins={['subtitle', { id: 'hotkeys', entry: HotkeysPlugin }]}
+```
+
+If you prefer to register plugins globally yourself (e.g. once at application start), pass string IDs as before:
 
 ```tsx
 import Vlitejs from 'vlitejs';
 import HotkeysPlugin from 'vlitejs/plugins/hotkeys';
 
+// Register once at app startup
 Vlitejs.registerPlugin('hotkeys', HotkeysPlugin);
 
 function App() {
@@ -128,10 +168,10 @@ function App() {
 | --------------------- | --------------------------------------- | ---------- | --------------------------------------------------------------------- |
 | `src`                 | `string`                                | —          | Media source URL (HTML5 providers)                                    |
 | `videoId`             | `string`                                | —          | Video ID for external providers (YouTube, Vimeo, Dailymotion)         |
-| `provider`            | `string`                                | `'html5'`  | vlitejs provider name                                                 |
+| `provider`            | `string \| VliteProviderRegistration`   | `'html5'`  | vlitejs provider name or inline registration object                   |
 | `type`                | `'video' \| 'audio'`                    | `'video'`  | Media element type (HTML5 provider only)                              |
 | `options`             | [`VliteOptions`](#vliteoptions)         | `{}`       | vlitejs player options                                                |
-| `plugins`             | `string[]`                              | `[]`       | Plugin IDs to activate                                                |
+| `plugins`             | `(string \| VlitePluginRegistration)[]` | `[]`       | Plugin IDs or inline registration objects                             |
 | `onReady`             | `(player: VlitePlayerType) => void`     | —          | Called when the player is ready; receives the player instance         |
 | `onPlay`              | `(event: Event) => void`               | —          | Called when playback starts                                           |
 | `onPause`             | `(event: Event) => void`               | —          | Called when playback is paused                                        |
@@ -165,6 +205,25 @@ function App() {
 | `autoHide`        | `boolean`         | `false`  | Auto-hide the control bar on inactivity (video only)      |
 | `autoHideDelay`   | `number`          | `3000`   | Auto-hide delay in milliseconds (video only)              |
 | `providerParams`  | `object`          | `{}`     | Override provider-specific embed parameters               |
+
+### VliteProviderRegistration
+
+| Field     | Type      | Required | Description                                                              |
+| --------- | --------- | -------- | ------------------------------------------------------------------------ |
+| `id`      | `string`  | ✓        | Provider identifier (e.g. `'youtube'`, `'vimeo'`, `'dailymotion'`)      |
+| `entry`   | `any`     | ✓        | Provider factory function (see [vlitejs provider API][providers-readme]) |
+| `options` | `unknown` | —        | Optional options forwarded to `Vlitejs.registerProvider`                 |
+
+### VlitePluginRegistration
+
+| Field     | Type      | Required | Description                                                          |
+| --------- | --------- | -------- | -------------------------------------------------------------------- |
+| `id`      | `string`  | ✓        | Plugin identifier (e.g. `'hotkeys'`, `'subtitle'`, `'pip'`)         |
+| `entry`   | `any`     | ✓        | Plugin class (see [vlitejs plugin API][plugins-readme])              |
+| `options` | `unknown` | —        | Optional options forwarded to `Vlitejs.registerPlugin`               |
+
+[providers-readme]: https://github.com/vlitejs/vlite/blob/main/src/providers/README.md
+[plugins-readme]: https://github.com/vlitejs/vlite/blob/main/src/plugins/README.md
 
 ## License
 
