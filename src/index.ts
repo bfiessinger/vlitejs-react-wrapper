@@ -10,3 +10,5 @@ export type {
   VlitePluginRegistration,
   VliteProviderRegistration,
 } from './types';
+export { useVlitePlayer, useVlitePlaybackState } from './hooks';
+export type { VlitePlaybackState } from './hooks';
