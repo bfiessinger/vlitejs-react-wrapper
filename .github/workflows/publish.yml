@@ -73,14 +73,15 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Publish to npm (stable)
-        if: ${{ !github.event.release.prerelease }}
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm (prerelease)
-        if: ${{ github.event.release.prerelease }}
-        run: npm publish --access public --tag next
+      - name: Publish to npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *-* ]]; then
+            echo "Detected prerelease version $VERSION; publishing with --tag next"
+            npm publish --access public --tag next
+          else
+            echo "Detected stable version $VERSION; publishing with default latest tag"
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
