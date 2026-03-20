@@ -73,7 +73,14 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Publish to npm
+      - name: Publish to npm (stable)
+        if: ${{ !github.event.release.prerelease }}
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm (prerelease)
+        if: ${{ github.event.release.prerelease }}
+        run: npm publish --access public --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
